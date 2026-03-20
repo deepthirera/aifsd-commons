@@ -1,0 +1,114 @@
+---
+description: Core principles to follow in development
+alwaysApply: true
+---
+You are writing "Legacy-Proof" code always. Use Domain Driven Design (DDD) as default design paradigm.
+**Specialization:** Secure-by-Design Architecture, OWASP ASVS Compliance, and Zero Trust Principles.Domain-Driven Design (DDD), High-Performance Computing, and Maintainable Systems.
+
+**Goal:** 
+- Functionality is secondary to Security. The code must be defensible, auditable, and resistant to the **OWASP Top 10**.
+- The code must be so clear that even a intern developer can understand it without comments, yet so robust that a senior architect would approve it for production.
+
+**Philosophy:** 
+- "Trust input from nowhere. Sanitize everything. Log what happened (safely)."
+- "Code is read 10x more often than it is written. Optimize for the reader."
+
+## MCP tools
+Always Use the Given MCP tools wherever neeed
+* Sequential Thinking - Use this set of MCP tools to plan your tasks and to break down complex asks into simple, logical and connected set of tasks
+* Beware of what information you are sending to MCP tool calls. Make sure that you DO NOT send any sensitive data like PII, passwords, API keys, tokens, file uploads.
+
+## Security Analysis & Threat Modeling
+**CRITICAL:** Before writing code, output a `<security_context>` markdown block in the chat:
+1.  **Data Sensitivity:** Is PII (Personal Identifiable Information), PHI, or PCI data involved?
+2.  **Trust Boundaries:** Where does data enter the system? (e.g., Public API -> Internal Service -> Database).
+3.  **Attack Vector Analysis:** Identify the 3 most likely risks for this specific component (e.g., IDOR, SQLi, Broken Access Control).
+
+## Input Defense (Zero Trust)
+* **Type Safety:** Use strict typing (Pydantic V2).
+    * *Strings:* MUST have `min_length`, `max_length`, and `pattern` (regex).
+    * *Numbers:* MUST have `ge` (greater or equal) and `le` (less or equal) constraints.
+* **Deserialization:** NEVER trust raw JSON/Pickle. Use schema validation *before* processing.
+* **Sanitization:** All inputs are "Guilty until proven Innocent." Escape HTML/JS characters on output to prevent XSS.
+
+## Open Source License compliance
+**CRITICAL:** Before selecting any open source library, make sure the library doesn't have any restrictive licensing. The selected components licensing must be corporate friendly (must allow patents)
+**Preferred Licenses:** Apache 2.0, MIT, CC0
+**Deep License Scan:** The selected opensource component shouldn't have any dependency with restrictive license libraries or components
+
+## Secure Implementation Standards
+
+### 1. Authentication & Authorization
+* **Secrets:** NEVER hardcode secrets. Use `pydantic-settings` or `.env` injection.
+* **Passwords:** Use Argon2 or bcrypt. Enforce complexity (NIST guidelines: Length > complexity).
+* **Session Management:**
+    * Use `HttpOnly`, `Secure`, and `SameSite=Strict` cookies.
+    * JWTs must have short expiry and strong signing algorithms (ES256/RS256 preferred over HS256).
+
+### 2. Network & Transport
+* **CORS:** Explicit Allow-List ONLY.
+    * *Prod:* Specific domains (`https://app.client.com`).
+    * *Dev:* `localhost` only.
+    * *Banned:* `allow_origins=["*"]` is strictly prohibited.
+* **Security Headers:** Middleware MUST inject:
+    * `Strict-Transport-Security` (HSTS)
+    * `Content-Security-Policy` (CSP) - Default to `self`
+    * `X-Content-Type-Options: nosniff`
+
+## Observability & Resilience
+
+### 1. Error Handling (The "Information Leak" Rule)
+* **Client Side:** Return generic HTTP 4xx/5xx responses (e.g., "Request failed"). NEVER leak stack traces, SQL syntax errors, or path info.
+* **Server Side:** Log the full stack trace and context.
+
+### 2. Logging & Audit
+* **PII Masking:** You MUST redact Sensitive Data (Emails, Credit Cards, Passwords) *before* writing to logs.
+* **Structure:** Use Structured Logging (JSON) for ingestion by SIEM tools (Splunk/Datadog).
+
+## Output Format
+1.  `<security_context>` as markdown in the chat interface.
+2.  **Secure Code Implementation:**
+    * Include inline comments explaining *why* a specific security pattern was used (e.g., `# Using secret_str to prevent logging of API key`).
+    * Dependency Check: If using 3rd party libs, ensure they are pinned to stable, secure versions.
+
+**Project Structure:** Planned, Organized for DDD. Restrict the depth of subfolders to 2.  Strictly separate layers: Presentation (API) -> Application (Use Cases) -> Domain (Core Logic) -> Infrastructure (DB/External). Dependencies point INWARD.
+
+## Cognitive Complexity & Readability
+**CRITICAL:** Reduce the mental burden required to understand the code. DO NOT comment in the code, when you must do then make it concise and meaningful.
+* **Naming Discipline:**
+    * *Variables:* Nouns (`userConfig`, `pendingRetryCount`).
+    * *Functions:* Verbs (`calculateTax`, `validateInput`).
+    * *Booleans:* Questions (`isValid`, `hasAccess`, `canExecute`).
+* **The "No-Else" Rule:** Use **Guard Clauses** (Early Returns) to handle edge cases immediately. Avoid nesting `if/else` blocks deeper than 2 levels.
+* **Magic Numbers:** Strictly Forbidden. Extract all literals into named `const` or `enum` (e.g., `MAX_RETRY_ATTEMPTS = 3`).
+* **Self-Documenting:** If you feel the need to write a comment explaining *what* the code does, rewrite the code instead. Comments are reserved for *Why* (business context) or complex algorithmic choices.
+
+## Structural Integrity (SOLID & DRY)
+* **Single Responsibility (SRP):** Functions must do one thing. If a function name has "And" in it (e.g., `validateAndSave`), break it apart.
+* **Primitive Obsession:** Do not pass raw `strings` or `ints` for domain concepts. Use Value Objects or Interfaces (e.g., pass a `Coordinates` object, not two `int` arguments).
+* **Switch Statements:** If switching on a type code, use the **Strategy Pattern** or Polymorphism instead of large `switch/case` blocks.
+* **Parameter Limits:** Max 3 arguments per function. If you need more, create a parameter object (DTO).
+
+## Performance & Efficiency
+* **Big O Awareness:** Choose data structures based on access patterns.
+    * *Lookups:* Use HashMaps/Sets O(1) over Arrays O(n).
+* **Memory Hygiene:**
+    * Avoid creating unnecessary temporary objects in loops.
+    * Ensure all subscriptions, listeners, and connections are properly disposed of.
+* **Lazy Evaluation:** Defer heavy calculations until the result is actually needed.
+
+## Defensive Coding
+* **Input Validation:** Fail fast. Validate inputs at the boundary of the public API.
+* **Immutability:** Prefer immutable data structures by default. Avoid side effects where possible.
+* **Null Safety:** Avoid returning `null`. Use the `Optional` pattern or return empty collections/defaults.
+
+## Output Format
+1.  **Complexity Analysis:** A brief header block stating:
+    * Time Complexity: O(x)
+    * Space Complexity: O(y)
+    * Key Design Decisions (e.g., "Used Strategy Pattern to avoid switch statements").
+2.  **The Code:**
+    * Strictly typed (where the language allows).
+    * Formatted with industry-standard linters (Prettier/Black/GoFmt).
+    * Free of dead code and debug print statements.
+

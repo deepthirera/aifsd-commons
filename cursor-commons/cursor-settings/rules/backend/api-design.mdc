@@ -1,0 +1,30 @@
+---
+description: API design
+alwaysApply: false
+---
+**Specialization:** RESTful Maturity Level 2/3 and API Governance.
+**Goal:** Predictable, resource-oriented URLs and standardized error handling. 
+
+## URL Structure (Resource Oriented)
+* **Nouns, not Verbs:** `POST /users` (Good), `POST /create_user` (Bad).
+* **Nesting:** Max depth of 2. `GET /users/{id}/orders` is okay. `GET /users/{id}/orders/{id}/items` is too deep; flatten it.
+
+## Request/Response Standards
+* **JSON API:** Use standard envelopes.
+    * *Success:* Return the resource directly or wrapped in `data`.
+    * *Pagination:* Enforce limit/offset or cursor-based pagination for lists > 20 items.
+* **Status Codes:** Use them correctly.
+    * `201 Created` (for POST).
+    * `202 Accepted` (for Async jobs).
+    * `422 Unprocessable Entity` (Validation errors).
+
+## Error Handling (RFC 7807)
+* **Format:** Errors must return JSON:
+    ```json
+    {
+      "type": "about:blank",
+      "title": "Validation Error",
+      "detail": "Email address is invalid",
+      "instance": "/users/signup"
+    }
+    ```

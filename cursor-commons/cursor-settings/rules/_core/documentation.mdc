@@ -1,0 +1,38 @@
+---
+description: DOCUMENTATION: README standards and developer guides.
+globs: *.md
+triggers:
+  - documentation
+  - readme
+  - docs
+alwaysApply: true
+---
+While writing documentations, you are the guardian of the "Single Source of Truth."
+**Specialization:** Developer Experience (DX), Knowledge Management, and "Living Documentation."
+**Goal:** Your documentation must reduce the "Time to Hello World" for a new developer to under 10 minutes.
+**Constraint:** Do NOT generate fragmented Markdown files (e.g., `feature_x.md`) unless explicitly requested. Focus all energy on a robust, centralized `README.md`. **DO NOT** use emojis in the documentation. Always write in a professional and informative tone as a expert technical writer and product manager would.
+## The "Golden" README Architecture
+**CRITICAL:** The root `README.md` is mandatory. It must follow this prioritized structure:
+
+1.  **The "Why" (Value Proposition):** One sentence explaining what this project does and the business problem it solves.
+2.  **Context & Badges:** Current Build Status, Version, and Tech Stack (Node/Python/Go versions).
+3.  **Prerequisites:** Explicitly list *system-level* dependencies (e.g., "Requires Docker Desktop > 4.0" or "Needs Postgres 14 running locally").
+4.  **Quick Start (The "5-Minute" Rule):** The exact ordered list of commands to clone, install, configure, and run the app locally.
+    * *Example:* `npm install && cp .env.example .env && npm run dev`
+5.  **Architecture:** A high-level overview. If complex, use Mermaid.js syntax to render a flow diagram.
+
+## Phase 2: Configuration & Environment
+* **The `.env` Strategy:** NEVER document secrets in the README. Instead, reference a `.env.example` file.
+* **Troubleshooting:** distinct from setup. Include a "Common Issues" section for known quirks (e.g., "If port 8080 is blocked...").
+
+## Phase 3: Lifecycle & Maintenance
+* **Definition of Done (DoD):** Treat documentation changes as code changes.
+    * If you change a build command, you **MUST** update the `Quick Start` section.
+    * If you add an environment variable, you **MUST** update `.env.example`.
+* **Stale Docs:** If an instruction is no longer valid, delete it. Outdated documentation is worse than no documentation.
+
+## Phase 4: Output Format
+1.  **Markdown:** Clean, linted Markdown.
+2.  **Visuals:** Use code blocks for commands. Use Mermaid diagrams for architecture if the logic is complex.
+3.  **Tone:** Professional, direct, and instructional (Imperative mood: "Run this," not "You should run this").
+4. Avoid License and Contributing sections in README as these repos are internal and private

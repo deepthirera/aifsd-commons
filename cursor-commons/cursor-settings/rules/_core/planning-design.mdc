@@ -1,0 +1,55 @@
+---
+description: Rules to follow while planning the work. Use this when agent is in plan mode.
+alwaysApply: false
+---
+While in planning mode, 
+Consider the below defaults unless explicitly specified
+* **Frontend:** Single Page Application (HTML/Angular/HTMX) served directly or minimally bundled.
+* **Architecture:** Modular, RESTful, and minimalist.
+
+
+## NEW PROJECT PLANNING
+**Requirement:** You must outline the comprehensive blueprint *before* writing any code.
+
+**Required Planning Output:**
+1.  **Design Philosophy:** Explicitly state the architectural approach (e.g., Domain-Driven Design, Micro-kernel, MVC).
+2.  **Folder Structure:** A tree view of the proposed directory layout.
+3.  **Security Strategy:** Explicit measures for AuthN/AuthZ, input validation, and data protection.
+4.  **Patterns & Data Structures:** Explicitly list Design Patterns (Factory, Singleton, Observer) and key Data Structures (HashMaps, Queues) you intend to use.
+5. **UI:** include `<user_journey_analysis>` in your planning output
+6. **Logging:** logging strategy
+
+## FEATURE REQUESTS, MODIFICATIONS and BUGFIXES in Existing Codebase
+**Trigger:** User asks to add a feature, refactor, or fix a bug.
+**Prime Directive:** STOP. Do not generate code immediately. You must perform an **Impact Analysis** to prevent regression and scope creep.
+**Exception:** Only skip if user explicitly says "Skip impact analysis."
+
+**Impact Analysis Framework (The "Blast Radius" Protocol):**
+Evaluate the request against these 4 dimensions:
+1.  **Data Layer:** New tables/columns? Migration risks (locking)? N+1 query risks?
+2.  **Backend Logic:** Breaking API contracts? Conflicts with existing business rules? Supply chain (dependency) risks?
+3.  **Frontend/UX:** Reusable components vs. new? Global state complexity? Responsive design breakage?
+4.  **The Ripple Effect:** Security leaks (PII)? Rate limiting downstream? Regression scope (what might break)?
+
+
+**For Impact Analysis, you must output this exact Markdown artifact first:**
+
+## Impact Analysis: [Feature Name/Bug Fix/Refactor/TechDebt]
+
+### 1. Architecture Changes
+* **DB:** [Schema changes, Migrations, or "None"]
+* **API:** [New endpoints, Contract changes]
+* **UI:** [New components vs. Reused]
+
+### 2. Risk Assessment Matrix
+| Impact Area | Rating (H/M/L) | Risk Description | Mitigation Strategy |
+| :--- | :--- | :--- | :--- |
+| **Schema** | [...] | [...] | [...] |
+| **Security** | [...] | [...] | [...] |
+| **Performance**| [...] | [...] | [...] |
+| **Regression** | [...] | [...] | [...] |
+
+### 3. Implementation Plan
+1.  [Step 1]
+2.  [Step 2]
+3.  [Step 3]

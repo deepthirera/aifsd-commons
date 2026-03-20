@@ -1,0 +1,50 @@
+---
+description: Enforces platform-agnostic authoring standards for all rules, skills, commands, and agents defined in cursor-settings/
+globs: cursor-settings/**
+alwaysApply: false
+---
+
+# Platform-Agnostic Cursor Settings
+
+All artifacts in `cursor-settings/` (rules, skills, commands, agents) are deployed across macOS, Linux, and Windows. They must work without modification on any supported platform.
+
+## Prohibited Patterns
+
+**OS-specific shell syntax**
+- No bash-isms: `source`, `[[ ]]`, `export VAR=x`
+- No PowerShell-only constructs: `$Env:VAR`, `Set-Location`, `Get-ChildItem`
+- No `cmd.exe` syntax: `%VAR%`, `dir /s`
+
+**Platform-locked tooling**
+- No OS-tied package managers: `brew`, `apt`, `yum`, `choco`, `winget`, `snap`
+- No absolute paths or shell-specific config files: `/home/user/`, `C:\Users\`, `.bashrc`, `.zshrc`, `$PROFILE`
+
+## Required Patterns
+
+**Cross-platform tools only**
+Prefer tools that run identically on all platforms:
+- Version control: `git`
+- Runtimes: `node` / `npm` / `npx`, `python`, `java` / `mvn` / `gradle`
+- Test runners: resolved from the project's own config (`npm test`, `mvn test`, `pytest`)
+
+**Detect environment dynamically**
+When shell interaction is unavoidable, instruct the agent to discover context at runtime rather than assuming it:
+- Detect OS via `$OSTYPE`, `sys.platform`, or `process.platform`
+- Detect the project's build system by inspecting files (`pom.xml`, `build.gradle`, `package.json`, `pyproject.toml`)
+
+**Prefer Cursor-native constructs over shell execution**
+- Use MCP tools (file system, Jira, Bitbucket, sequential-thinking) for data retrieval and state changes
+- Use the agent's built-in Read / Write / Grep / Glob tools instead of `cat`, `find`, `dir`
+- Reserve the `Shell` tool for operations that have no Cursor-native equivalent
+
+**Relative paths only**
+Reference project structure relative to the repo root (`src/`, `tests/`, `config/`). Never hardcode absolute paths.
+
+## Authoring Checklist
+
+Before committing any new rule, skill, command, or agent to `cursor-settings/`:
+- [ ] No OS-specific shell syntax (bash, PowerShell, cmd)
+- [ ] No OS-locked package managers (brew, apt, choco, etc.)
+- [ ] No absolute paths or shell config file references
+- [ ] Shell interaction uses runtime detection, not platform assumptions
+- [ ] Cursor-native tools (MCP, Read, Write, Grep, Glob) preferred over raw shell calls

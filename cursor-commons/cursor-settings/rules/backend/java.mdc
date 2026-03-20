@@ -1,0 +1,294 @@
+---
+description: Java coding standards, idioms, project structure, and best practices for production-grade Java development
+globs: ["**/*.java", "**/pom.xml", "**/build.gradle", "**/build.gradle.kts", "**/settings.gradle", "**/settings.gradle.kts", "**/*.properties", "**/application*.yml", "**/application*.yaml"]
+alwaysApply: false
+---
+
+# Java Rules
+
+## Style & Formatting
+
+- Follow Google Java Style Guide. Assume `google-java-format` or `spotless` is configured — do not fight their formatting.
+- Max line length: 120 characters. Indent with 4 spaces — never tabs.
+- Opening brace on the same line (K&R style). Always use braces even for single-line `if`/`for`/`while`.
+- One blank line between methods. Two blank lines between top-level class declarations.
+- Imports: no wildcard imports (`import java.util.*`). Always explicit. Order: static imports → java.* → javax.* → third-party → local.
+- Remove all unused imports. Configure IDE/build to fail on unused imports.
+- Avoid trailing whitespace. Files must end with a newline.
+
+## Naming Conventions
+
+- `PascalCase` for classes, interfaces, enums, annotations.
+- `camelCase` for methods, variables, parameters.
+- `SCREAMING_SNAKE_CASE` for constants (`static final`).
+- `lowercase.with.dots` for packages — short, meaningful, no plurals (`com.company.auth` not `com.company.auths`).
+- Interfaces: name by capability, not `I`-prefix (`Serializable`, `UserRepository` — not `IUserRepository`).
+- Boolean methods/fields: `is*`, `has*`, `can*`, `should*`.
+- Avoid abbreviations except universally accepted ones (`ctx`, `cfg`, `dto`, `id`, `db`).
+- Test classes: `{ClassUnderTest}Test`. Test methods: `should{Outcome}When{Condition}`.
+
+## Types & Generics
+
+- Always use generics — never raw types (`List<String>` not `List`).
+- Use bounded wildcards correctly: `? extends T` for producers, `? super T` for consumers (PECS).
+- Prefer interfaces as variable types: `List<String>` over `ArrayList<String>` on the left-hand side.
+- Use `var` (Java 10+) for local variables where the type is obvious from the right-hand side. Never use `var` for method parameters or return types.
+- Prefer `Optional<T>` as return type when absence is a valid, expected outcome — never return `null` from public APIs.
+- Never use `Optional` as a method parameter or field type — only as a return type.
+
+```java
+// Good
+Optional<User> findById(long id);
+List<String> names = new ArrayList<>();
+var users = userRepository.findAll(); // type obvious from context
+
+// Bad
+User findById(long id); // returns null on miss
+ArrayList<String> names = new ArrayList<>(); // implementation type leaked
+```
+
+## Immutability & Value Objects
+
+- Make classes `final` by default unless designed for inheritance.
+- Make fields `private final` by default. Only non-final when mutation is genuinely needed.
+- Use Java 17+ `record` for immutable data carriers — eliminates boilerplate `equals`/`hashCode`/`toString`:
+  ```java
+  public record Point(int x, int y) {}
+  ```
+- Use `Collections.unmodifiableList()` / `List.copyOf()` when returning collections from getters.
+- Use `sealed` classes (Java 17+) to model closed type hierarchies (e.g., result types, domain events).
+
+## Null Safety
+
+- Annotate with `@NonNull` / `@Nullable` (from `org.springframework.lang` or `jakarta.annotation`) on all public API method signatures.
+- Never return `null` from a public method — use `Optional<T>`, empty collections, or throw.
+- Check method parameters at entry points with `Objects.requireNonNull(param, "param must not be null")`.
+- Use `@NotNull` Bean Validation annotations on DTOs and request bodies.
+- Never pass `null` intentionally — use `Optional.empty()`, sentinel objects, or redesign the API.
+
+## Error Handling & Exceptions
+
+- Checked exceptions for recoverable, expected failures the caller must handle.
+- Unchecked (`RuntimeException`) for programming errors or unrecoverable failures.
+- Define a project-level exception hierarchy:
+  ```java
+  public class AppException extends RuntimeException { ... }
+  public class NotFoundException extends AppException { ... }
+  public class ValidationException extends AppException { ... }
+  ```
+- Always include a message and cause when constructing exceptions: `new ServiceException("Failed to process order", cause)`.
+- Never swallow exceptions silently. At minimum: `log.error("...", e)` then rethrow or wrap.
+- Never catch `Exception`, `RuntimeException`, `Error`, or `Throwable` unless at a boundary (e.g., global handler).
+- Use try-with-resources for all `AutoCloseable` resources — never manual `finally` close blocks.
+- Avoid checked exceptions in lambdas/streams. Wrap with an unchecked utility if needed.
+
+```java
+// Good
+try (var stream = Files.newInputStream(path)) {
+    return stream.readAllBytes();
+} catch (IOException e) {
+    throw new FileReadException("Failed to read: " + path, e);
+}
+
+// Bad
+InputStream stream = Files.newInputStream(path);
+try { ... } finally { stream.close(); } // verbose and error-prone
+```
+
+## Collections & Streams
+
+- Prefer factory methods: `List.of(...)`, `Map.of(...)`, `Set.of(...)` for immutable collections.
+- Use `Map.ofEntries(Map.entry(...))` for maps with more than 10 entries.
+- Use Streams for transformation pipelines. Avoid streams for simple indexed loops — a `for` loop is clearer.
+- Terminate streams eagerly — never store intermediate streams in variables.
+- Use `Collectors.toUnmodifiableList()` instead of `Collectors.toList()` (Java 10+).
+- Prefer `map` + `filter` + `collect` over `forEach` with side effects inside streams.
+- Use `Optional.map()` / `Optional.flatMap()` instead of `isPresent()` + `get()`.
+
+```java
+// Good
+var activeUserNames = users.stream()
+    .filter(User::isActive)
+    .map(User::getName)
+    .collect(Collectors.toUnmodifiableList());
+
+// Bad
+List<String> names = new ArrayList<>();
+for (User u : users) {
+    if (u.isActive()) names.add(u.getName());
+}
+```
+
+## Classes & OOP
+
+- Favour composition over inheritance. Inherit only to model true `is-a` relationships.
+- Design for extension OR prohibit it: either document the extension contract or mark `final`.
+- Keep classes small and focused (Single Responsibility). If a class needs a scrollbar to read, split it.
+- Builder pattern for objects with 4+ constructor parameters — consider Lombok `@Builder` or manual.
+- Static factory methods over constructors when: naming adds clarity, subtype may be returned, or caching applies.
+- Avoid public fields except in `record` types. Expose state through explicit accessors.
+- Minimize scope of everything: prefer package-private over public, method-local over field when possible.
+
+## Concurrency
+
+- Prefer higher-level abstractions: `ExecutorService`, `CompletableFuture`, virtual threads (Java 21+).
+- Use `java.util.concurrent` collections (`ConcurrentHashMap`, `CopyOnWriteArrayList`) over synchronized wrappers.
+- Use `AtomicInteger`, `AtomicReference` for simple lock-free counters/flags.
+- Mark shared mutable state with `volatile` or use proper synchronization — never assume visibility without it.
+- Avoid `synchronized` blocks on `this` — use dedicated private lock objects or `ReentrantLock`.
+- Use structured concurrency (`StructuredTaskScope`, Java 21) for scoped parallel subtasks.
+- Document thread-safety guarantees on all public classes with `@ThreadSafe` or `@NotThreadSafe`.
+
+```java
+// Good — virtual threads (Java 21+)
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    var user  = scope.fork(() -> userService.find(id));
+    var order = scope.fork(() -> orderService.findByUser(id));
+    scope.join().throwIfFailed();
+    return new UserDashboard(user.get(), order.get());
+}
+```
+
+## Modern Java Features
+
+- **Records** (16+): immutable data carriers, DTOs, value objects.
+- **Sealed classes** (17+): closed hierarchies for domain events, result types, ADTs.
+- **Pattern matching `instanceof`** (16+): eliminate explicit casts.
+- **Switch expressions** (14+): use `->` form, ensure exhaustiveness.
+- **Text blocks** (15+): for multiline strings (SQL, JSON templates, HTML).
+- **Virtual threads** (21+): for high-throughput I/O-bound services — replace thread-pool tuning.
+
+```java
+// Pattern matching
+if (shape instanceof Circle c) {
+    return Math.PI * c.radius() * c.radius();
+}
+
+// Switch expression
+double area = switch (shape) {
+    case Circle c    -> Math.PI * c.radius() * c.radius();
+    case Rectangle r -> r.width() * r.height();
+};
+
+// Text block
+String sql = """
+    SELECT u.id, u.name
+    FROM users u
+    WHERE u.active = true
+      AND u.created_at > :since
+    """;
+```
+
+## Spring Boot (if applicable)
+
+- Use constructor injection exclusively — never field injection (`@Autowired` on fields).
+- Declare beans in `@Configuration` classes, not scattered `@Bean` on service classes.
+- Use `@ConfigurationProperties` + `@Validated` for typed, validated config — never `@Value` for complex config.
+- Keep `@RestController` thin: validate input, delegate to service, map to response. No business logic.
+- Use `@Service` for business logic, `@Repository` for data access — respect layer boundaries.
+- Externalize all environment-specific config via `application-{profile}.yml`. No hardcoded env-specific values.
+- Use Spring's `@Transactional` at the service layer, not repository layer. Default propagation is sufficient in most cases.
+- Prefer `ResponseEntity<T>` for full HTTP control; use `@ControllerAdvice` + `@ExceptionHandler` for global error mapping.
+
+```java
+// Good — constructor injection
+@Service
+public class OrderService {
+    private final OrderRepository repository;
+    private final PaymentGateway gateway;
+
+    public OrderService(OrderRepository repository, PaymentGateway gateway) {
+        this.repository = repository;
+        this.gateway = gateway;
+    }
+}
+
+// Bad — field injection, untestable without Spring context
+@Service
+public class OrderService {
+    @Autowired private OrderRepository repository;
+    @Autowired private PaymentGateway gateway;
+}
+```
+
+## Testing
+
+- Use JUnit 5 (`@Test`, `@BeforeEach`, `@ExtendWith`). No JUnit 4.
+- Use AssertJ for fluent, readable assertions — not raw `assertEquals`.
+- Use Mockito for mocking. Prefer `@ExtendWith(MockitoExtension.class)` over `MockitoAnnotations.openMocks`.
+- Test naming: `should{ExpectedOutcome}When{StateOrCondition}`.
+- One logical behaviour per test. Arrange-Act-Assert structure, separated by blank lines.
+- Use `@ParameterizedTest` + `@MethodSource` / `@CsvSource` for data-driven tests.
+- For Spring Boot: `@WebMvcTest` for controller slice tests, `@DataJpaTest` for repository tests. Use `@SpringBootTest` sparingly — it's slow.
+- Use Testcontainers for integration tests against real databases/brokers — no in-memory fakes for persistence tests.
+- Test coverage target: 80%+ on service/domain layer. Do not chase 100% — test behaviour, not getters.
+
+```java
+@Test
+void shouldThrowNotFoundExceptionWhenUserDoesNotExist() {
+    // Arrange
+    when(repository.findById(99L)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    assertThatThrownBy(() -> service.getUser(99L))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessageContaining("User 99 not found");
+}
+```
+
+## Logging
+
+- Use SLF4J API with Logback (or Log4j2) implementation. Never use `java.util.logging` directly.
+- Declare logger as `private static final`: `private static final Logger log = LoggerFactory.getLogger(MyClass.class)`.
+- Use parameterized logging — never string concatenation: `log.debug("Processing order {}", orderId)`.
+- Log at appropriate levels: `TRACE` for fine-grained tracing, `DEBUG` for dev diagnostics, `INFO` for lifecycle events, `WARN` for recoverable anomalies, `ERROR` for failures requiring attention.
+- Always pass the exception as the last parameter to preserve stack trace: `log.error("Failed to process", e)`.
+- Never log sensitive data (passwords, tokens, PII, card numbers).
+- Use MDC (`MDC.put("traceId", id)`) for request-scoped correlation IDs in services.
+
+## Project Structure (Maven / Gradle)
+
+```
+project/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/company/app/
+│   │   │       ├── Application.java       # entry point only
+│   │   │       ├── config/               # Spring config, beans
+│   │   │       ├── domain/               # entities, value objects, domain services
+│   │   │       ├── application/          # use cases / application services
+│   │   │       ├── infrastructure/       # repos, external clients, persistence
+│   │   │       └── api/                  # controllers, DTOs, mappers
+│   │   └── resources/
+│   │       ├── application.yml
+│   │       └── application-{profile}.yml
+│   └── test/
+│       ├── java/                         # mirrors main structure
+│       └── resources/
+│           └── application-test.yml
+├── pom.xml / build.gradle.kts
+└── Makefile                              # lint, test, build, run targets
+```
+
+- Package by **layer** for small apps; package by **feature/domain** for larger ones.
+- `Application.java` is the entry point only — no beans, no logic.
+- Separate DTOs from domain models. Never expose JPA entities directly through the API layer.
+
+## Build & Dependency Management
+
+- Prefer Maven (pom.xml) for dependency management
+- Use Maven BOM (`dependencyManagement`) to align transitive dependency versions.
+- Run `./mvnw dependency:analyze` regularly to prune unused dependencies.
+
+## Security
+
+- Never log or serialize sensitive fields — annotate with `@JsonIgnore`, `@ToString.Exclude`.
+- Never use `System.out.println` to check information. Log when in doubt. 
+- Use parameterized queries always — never string-concatenated SQL.
+- Validate all input at API boundaries with Bean Validation (`@Valid`, `@NotNull`, `@Size`).
+- Use `SecureRandom` for tokens/nonces — never `Math.random()` or `new Random()`.
+- Store secrets in environment variables or a secrets manager — never in `application.yml` committed to VCS.
+- Use `HttpOnly` + `Secure` flags on cookies. Set `SameSite=Strict` where applicable.
+- Keep dependencies up to date — integrate OWASP Dependency-Check in CI pipeline.
+

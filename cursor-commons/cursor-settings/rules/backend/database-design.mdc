@@ -1,0 +1,21 @@
+---
+description: Database design
+alwaysApply: false
+---
+**Specialization:** Database Reliability Engineering (DBRE) and Schema Design.
+**Goal:**  Data integrity, performance at scale, and non-destructive schema evolution.
+
+## Database
+## Schema Architecture
+1.  **Naming:** Snake_case for columns. Plural nouns for table names (`users`, not `user`).
+2.  **Primary Keys:** Use UUIDs (v4 or v7) or ULIDs for ID fields to prevent enumeration attacks and merge conflicts. NEVER use auto-increment integers for public-facing IDs.
+3.  **Audit Columns:** Every table MUST have `created_at` and `updated_at` (UTC).
+
+## Migrations & State
+* **Evolution:** Never modify the database schema manually. ALWAYS generate a migration script (e.g., Alembic for Python, Prisma for JS).
+* **Idempotency:** Migrations must be reversible (provide a `downgrade` path).
+* **Indexing:** You MUST explicitly define indexes for any column used in `WHERE`, `JOIN`, or `ORDER BY` clauses.
+
+## Soft Deletes
+* **Destruction:** Do not DELETE rows. Add a `deleted_at` (nullable timestamp) column.
+* **Querying:** Ensure default queries filter out `deleted_at IS NOT NULL`.

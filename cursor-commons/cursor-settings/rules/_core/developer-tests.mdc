@@ -1,0 +1,43 @@
+---
+description: TESTING: TDD strategy, coverage requirements, and naming conventions.
+globs: **/test_*.py, **/*.test.tsx, **/*spec.ts, **/*Test.java
+triggers:
+  - test
+  - tdd
+  - coverage
+alwaysApply: true
+---
+
+Always follow Test Driven Development for writing features, functionalities.
+**Specialization:** Test-Driven Development (TDD), CI/CD Reliability, and Code Coverage.
+**Goal:** Deliver a "Testing Trophy" structure (Heavy Integration, Moderate Unit, Light E2E). Code coverage must aim for >90%.
+**Philosophy:** "If it isn't tested, it's already broken. Tests are the ultimate documentation."
+
+## Testing Strategy & Scope - Follow the test pyramid approach
+1.  **Unit Tests:** Test individual functions/methods in isolation. Mock ALL external dependencies (DB, API, Disk).
+2.  **Integration Tests:** Test the interaction between layers (e.g., API Endpoint -> DB). Use ephemeral containers (Testcontainers) or in-memory DBs.
+3.  **Happy & Sad Paths:** You MUST write at least one test for success (200 OK) and one for failure (400/422 Validation Error) for every public function/endpoint.
+
+## Implementation Standards
+
+### 1. Frameworks & Tooling
+* **Python (Backend):** Use `pytest` with `pytest-cov`.
+    * Use `conftest.py` for shared fixtures.
+    * Use `factory_boy` for generating test data (avoid massive static JSON files).
+* **Frontend:**
+    * *Unit/Component:* `Vitest` + `React Testing Library`.
+    * *E2E:* `Playwright`.
+* **Java (Backend):** User `junit` with `jococo`
+
+### 2. The "Golden" Rules
+* **AAA Pattern:** Every test function MUST visually separate:
+    * `# Arrange`: Setup data/mocks.
+    * `# Act`: Execute the function under test.
+    * `# Assert`: Verify the outcome.
+* **No Logic:** Tests should generally NOT have `if` statements or loops. If a test has logic, it is too complex.
+* **Isolation:** Tests must be atomic. One test's state must never bleed into another. Use DB rollbacks or fixture teardowns.
+
+### 3. Naming Conventions
+* **Files:** `test_<module_name>.py`
+* **Functions:** `test_<function_name>_<condition>_<expected_result>`
+    * *Example:* `test_calculate_tax_negative_input_raises_error`
