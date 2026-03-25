@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const isTTY = process.stdout.isTTY;
@@ -33,12 +33,14 @@ const IS_UPGRADE         = process.argv.includes('--upgrade');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function commandExists(cmd) {
-  try { execSync(`${os.platform() === 'win32' ? 'where' : 'which'} ${cmd}`, { stdio: 'ignore' }); return true; }
-  catch { return false; }
+  const result = spawnSync(cmd, ['--version'], { stdio: 'ignore' });
+  return !result.error;
 }
 
-function run(cmd, cwd) {
-  execSync(cmd, { cwd, stdio: 'inherit' });
+function run(args, cwd) {
+  const result = spawnSync(args[0], args.slice(1), { cwd, stdio: 'inherit' });
+  if (result.error) err(result.error.message);
+  if (result.status !== 0) process.exit(result.status || 1);
 }
 
 function backupDir(src, dest) {
@@ -111,16 +113,18 @@ function setupCursorCommons() {
         rl.question('Do you want to reinstall/update? [Y/n] ', (ans) => {
           rl.close();
           if (/^[Nn]/.test(ans)) { log('Installation skipped.'); process.exit(0); }
-          run(`git fetch origin && git checkout -q ${BRANCH} && git pull --quiet origin ${BRANCH}`, CURSOR_COMMONS_HOME);
+          run(['git', 'fetch', 'origin'], CURSOR_COMMONS_HOME);
+          run(['git', 'checkout', '-q', BRANCH], CURSOR_COMMONS_HOME);
+          run(['git', 'pull', '--quiet', 'origin', BRANCH], CURSOR_COMMONS_HOME);
           resolve();
         });
       });
     }
-    run(`git fetch origin`, CURSOR_COMMONS_HOME);
-    run(`git checkout -q ${BRANCH}`, CURSOR_COMMONS_HOME);
-    run(`git pull --quiet origin ${BRANCH}`, CURSOR_COMMONS_HOME);
+    run(['git', 'fetch', 'origin'], CURSOR_COMMONS_HOME);
+    run(['git', 'checkout', '-q', BRANCH], CURSOR_COMMONS_HOME);
+    run(['git', 'pull', '--quiet', 'origin', BRANCH], CURSOR_COMMONS_HOME);
   } else {
-    run(`git clone --branch ${BRANCH} --depth 1 ${REMOTE} "${CURSOR_COMMONS_HOME}"`);
+    run(['git', 'clone', '--branch', BRANCH, '--depth', '1', REMOTE, CURSOR_COMMONS_HOME]);
   }
   log('');
 }
