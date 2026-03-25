@@ -26,35 +26,27 @@ A shared Cursor IDE configuration for teams. Includes custom commands and rules 
 
 ### Prerequisites
 
+- **Node.js** v16 or higher (replaces the previous curl/wget requirement)
 - **git** (v2.4.11 or higher recommended)
-- **curl** or **wget**
 
 ### Basic Installation
 
-Cursor Commons is installed by running one of the following commands in your terminal:
+Cursor Commons is installed by running the following command in your terminal (macOS, Linux, or Windows):
 
-| Method   | Command                                                                 |
-| -------- | ----------------------------------------------------------------------- |
-| **curl** | `sh -c "$(curl -fsSL https://github.com/adinath/aifsd-commons/raw/cursor-commons/tools/install.sh?at=refs%2Fheads%2Fdevelop)"` |
-| **wget** | `sh -c "$(wget -qO- https://github.com/adinath/aifsd-commons/raw/cursor-commons/tools/install.sh?at=refs%2Fheads%2Fdevelop)"` |
+```bash
+npx --yes github:adinath/aifsd-commons
+```
 
 _Note: Any existing `~/.cursor` will be backed up to `~/.cursor.pre-cursor-commons`. After installation, you can merge any customizations you want to keep into the new `~/.cursor`._
 
 #### Manual Inspection
 
-It's a good idea to inspect the install script before running it. Download the script first, review it, then run:
+It's a good idea to inspect the install script before running it. Clone the repository and run the script locally:
 
 ```bash
-curl -fsSL "https://github.com/adinath/aifsd-commons/raw/cursor-commons/tools/install.sh?at=refs%2Fheads%2Fdevelop" -o install.sh
-# Review install.sh
-sh install.sh
-```
-
-Alternatively, clone the repository and run the script locally:
-
-```bash
-git clone https://github.com/adinath/aifsd-commons.git ~/.cursor-commons
-sh ~/.cursor-commons/tools/install.sh
+git clone https://github.com/adinath/aifsd-commons.git
+# Review cursor-commons/tools/install.js
+node aifsd-commons/cursor-commons/tools/install.js
 ```
 
 ## Using Cursor Commons
@@ -98,10 +90,10 @@ To update at any time:
 cursor-commons-update
 ```
 
-Or run the upgrade script directly:
+Or run the upgrade directly with npx:
 
 ```bash
-sh ~/.cursor-commons/tools/upgrade.sh
+npx --yes github:adinath/aifsd-commons --upgrade
 ```
 
 ### Disable Update Check
@@ -125,7 +117,7 @@ export CURSOR_COMMONS_UPDATE_DAYS=7
 By default, Cursor Commons is installed to `~/.cursor-commons`. To use a different location:
 
 ```bash
-CURSOR_COMMONS_HOME="$HOME/.dotfiles/cursor-commons" sh -c "$(curl -fsSL ...)"
+CURSOR_COMMONS_HOME="$HOME/.dotfiles/cursor-commons" npx --yes github:adinath/aifsd-commons
 ```
 
 ### Unattended Install
@@ -133,7 +125,7 @@ CURSOR_COMMONS_HOME="$HOME/.dotfiles/cursor-commons" sh -c "$(curl -fsSL ...)"
 For automated or non-interactive installation:
 
 ```bash
-sh -c "$(curl -fsSL ...)" -- --unattended
+npx --yes github:adinath/aifsd-commons --unattended
 ```
 
 ### Custom Repository
@@ -141,7 +133,7 @@ sh -c "$(curl -fsSL ...)" -- --unattended
 To install from a fork or different branch:
 
 ```bash
-REMOTE=https://github.com/your-org/cursor-commons.git BRANCH=main sh -c "$(curl -fsSL ...)"
+REMOTE=https://github.com/your-org/cursor-commons.git BRANCH=main npx --yes github:adinath/aifsd-commons
 ```
 
 ## Uninstalling
