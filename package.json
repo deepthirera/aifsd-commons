@@ -1,0 +1,17 @@
+{
+  "name": "cursor-commons",
+  "version": "1.1.2",
+  "description": "Shared Cursor IDE configuration for teams — commands, rules, and MCP servers",
+  "bin": {
+    "cursor-commons": "./cursor-commons/tools/install.js"
+  },
+  "scripts": {
+    "install-local": "node ./cursor-commons/tools/install.js",
+    "upgrade": "node ./cursor-commons/tools/install.js --upgrade"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": ["cursor", "ide", "config", "developer-tools"],
+  "license": "MIT"
+}
